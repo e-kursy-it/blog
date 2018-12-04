@@ -1,0 +1,10 @@
+{
+  "name": "fa-icon",
+  "version": "1.0.0",
+  "description": "",
+  "main": "fa-icon.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "Marek Będkowski <marek@bedkowski.pl>"
+}

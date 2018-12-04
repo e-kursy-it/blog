@@ -1,0 +1,24 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+  	"module": "ESNext",
+    "outDir": "./",
+    "allowJs": false,
+    "target": "es2017",
+    "strict": true,
+    "strictNullChecks": false,
+    "sourceMap": false,
+    "lib": ["es2017", "dom"],
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "**/*.ts",
+    "*.ts"
+  ],
+  "exclude": [
+    "*.js",
+    "**/*js",
+    "node_modules"
+  ]
+}
+
