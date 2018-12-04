@@ -1,0 +1,19 @@
+{
+  "Records": [
+    {
+      "cf": {
+        "request": {
+          "uri": "style.css",
+          "headers": {
+            "accept-encoding": [
+              {
+                "key": "accept-encoding",
+                "value": "br"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
