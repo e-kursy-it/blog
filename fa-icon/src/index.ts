@@ -63,6 +63,9 @@ export class FaIcon extends HTMLElement {
       svg {
         fill: currentColor;
         height: 100%;
+        margin: 0;
+        padding: 0;
+        vertical-align: top;
       }
       </style>
     <svg viewBox="${viewBox}"
