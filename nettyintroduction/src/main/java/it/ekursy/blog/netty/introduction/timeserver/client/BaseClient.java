@@ -44,6 +44,9 @@ abstract class BaseClient {
                 {
                     logger.info( "Chanel initialized" );
                     var handlers = getHandlers();
+                    var pipeline = socketChannel.pipeline();
+
+                    handlers.forEach( pipeline::addLast );
                 }
             } );
 
