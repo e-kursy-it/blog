@@ -1,11 +1,10 @@
 package it.ekursy.blog.netty.introduction.activate;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -13,11 +12,13 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 public class ActivateServer {
 
     private final Logger logger = LogManager.getLogger( ActivateServer.class );
+
+    private final EventLoopGroup bossGroup = new NioEventLoopGroup();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
 
     private final String host;
@@ -32,14 +33,15 @@ public class ActivateServer {
     public void connect() throws InterruptedException, UnknownHostException
     {
         try {
-            var bootstrap = new Bootstrap();
-            bootstrap.group( workerGroup );
-            bootstrap.channel( NioSocketChannel.class );
+            var bootstrap = new ServerBootstrap();
+            bootstrap.group( bossGroup, workerGroup );
+            bootstrap.channel( NioServerSocketChannel.class );
             bootstrap.option( ChannelOption.SO_KEEPALIVE, true );
-            bootstrap.handler( new ChannelInitializer<SocketChannel>() {
+            bootstrap.childHandler( new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel socketChannel) throws Exception
                 {
+                    logger.info( "Channel initialized" );
                     var pipeline = socketChannel.pipeline();
                     pipeline.addLast( new ChannelInboundHandlerAdapter() {
                         @Override
@@ -57,10 +59,13 @@ public class ActivateServer {
                 }
             } );
 
+            bootstrap
+                .option( ChannelOption.SO_BACKLOG, 128 );
+
             var channelFuture = bootstrap.bind( host, port ).sync();
 
             channelFuture.addListener( (future) -> {
-                if (future.isSuccess()) {
+                if ( future.isSuccess() ) {
                     logger.info( "Server started at {}:{}", host, port );
                 }
             } );
@@ -75,7 +80,7 @@ public class ActivateServer {
     public static void main(String[] args) throws Exception
     {
         try {
-            var activateServer = new ActivateServer( "localhost", 8180 );
+            var activateServer = new ActivateServer( "127.0.0.1", 8080 );
 
             activateServer.connect();
         }

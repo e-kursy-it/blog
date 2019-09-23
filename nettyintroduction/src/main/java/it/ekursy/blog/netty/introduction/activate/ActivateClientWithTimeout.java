@@ -1,10 +1,15 @@
 package it.ekursy.blog.netty.introduction.activate;
 
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -12,22 +17,22 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
-public class ActivateClient {
+public class ActivateClientWithTimeout {
 
-    private final Logger logger = LogManager.getLogger( ActivateClient.class );
+    private final Logger logger = LogManager.getLogger( ActivateClientWithTimeout.class );
 
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
 
     private final String host;
     private final int port;
 
-    public ActivateClient(String host, int port)
+    public ActivateClientWithTimeout(String host, int port)
     {
         this.host = host;
         this.port = port;
     }
 
-    public void connect() throws InterruptedException, UnknownHostException
+    public void connect(Duration timeout) throws InterruptedException, UnknownHostException
     {
         try {
             var bootstrap = new Bootstrap();
@@ -40,6 +45,26 @@ public class ActivateClient {
                 public void initChannel(SocketChannel socketChannel) throws Exception
                 {
                     logger.info( "Chanel initialized" );
+                    var pipeline = socketChannel.pipeline();
+                    pipeline.addLast( new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void channelActive(ChannelHandlerContext channelHandlerContext) throws Exception
+                        {
+                            super.channelActive( channelHandlerContext );
+                            logger.info( "client connected" );
+                            var timer = new Timer();
+
+                            timer.schedule( new TimerTask() {
+                                @Override
+                                public void run()
+                                {
+                                    logger.info( "Closing client" );
+                                    channelHandlerContext.channel().close();
+                                }
+                            }, timeout.toMillis() );
+
+                        }
+                    } );
                 }
             } );
 
@@ -57,9 +82,9 @@ public class ActivateClient {
     public static void main(String[] args) throws Exception
     {
         try {
-            var activateClient = new ActivateClient( "127.0.0.1", 8080 );
+            var activateClient = new ActivateClientWithTimeout( "127.0.0.1", 8080 );
 
-            activateClient.connect();
+            activateClient.connect( Duration.ofSeconds( 1 ) );
         }
         catch ( Exception e ) {
             e.printStackTrace();
