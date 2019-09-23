@@ -1,5 +1,7 @@
 package it.ekursy.blog.netty.introduction.httpserver.server;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,17 +11,21 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
 import it.ekursy.blog.netty.introduction.httpserver.server.handlers.ChunkedFileReadingHandler;
+import it.ekursy.blog.netty.introduction.httpserver.server.handlers.HealthCheckHandler;
 import it.ekursy.blog.netty.introduction.httpserver.server.handlers.ResponseHeaderProducingHandler;
 
 public class HttpServer extends BaseServer {
 
+    private final Path filesLocation;
+
     /**
-     * @param host
      * @param port
+     * @param filesLocation
      */
-    protected HttpServer(String host, int port)
+    protected HttpServer(String host, int port, Path filesLocation)
     {
         super( host, port );
+        this.filesLocation = filesLocation;
     }
 
     @Override
@@ -30,7 +36,8 @@ public class HttpServer extends BaseServer {
         handlers.add( new HttpServerCodec() );
         handlers.add( new HttpObjectAggregator( 65536 ) );
         handlers.add( new ChunkedWriteHandler() );
-        handlers.add( new ResponseHeaderProducingHandler() );
+        handlers.add( new HealthCheckHandler() );
+        handlers.add( new ResponseHeaderProducingHandler( filesLocation ) );
         handlers.add( new ChunkedFileReadingHandler() );
 
         return handlers;
@@ -39,7 +46,10 @@ public class HttpServer extends BaseServer {
     public static void main(String[] args) throws Exception
     {
         try {
-            var httpServer = new HttpServer( "127.0.0.1", 8080 );
+            var host = args[0];
+            var filesLocation = Paths.get( args[ 1 ] );
+            System.out.println( filesLocation );
+            var httpServer = new HttpServer( host, 8180, filesLocation );
 
             httpServer.connect();
         }

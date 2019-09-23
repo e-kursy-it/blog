@@ -4,9 +4,12 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -16,6 +19,7 @@ import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.CharsetUtil;
@@ -23,6 +27,18 @@ import io.netty.util.CharsetUtil;
 import it.ekursy.blog.netty.introduction.httpserver.server.event.FileAvailableEvent;
 
 public class ResponseHeaderProducingHandler extends MessageToMessageDecoder<FullHttpRequest> {
+
+    private final Logger logger = LogManager.getLogger();
+
+    private final Path filesLocation;
+
+    /**
+     * @param filesLocation
+     */
+    public ResponseHeaderProducingHandler(Path filesLocation)
+    {
+        this.filesLocation = filesLocation;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception
@@ -38,17 +54,23 @@ public class ResponseHeaderProducingHandler extends MessageToMessageDecoder<Full
             return;
         }
 
-        var path = Paths.get( fullHttpRequest.uri() );
+        var path = Paths.get( filesLocation.toString(), fullHttpRequest.uri() );
 
-        if ( !Files.exists( path ) ) {
+        logger.info( "Start download: {}", path );
+        if ( !Files.exists( path ) || Files.isDirectory( path ) ) {
             sendError( channelHandlerContext, HttpResponseStatus.NOT_FOUND );
+            return;
+        }
+
+        if ( !path.endsWith( ".mp4" ) ) {
+            sendError( channelHandlerContext, HttpResponseStatus.BAD_REQUEST );
             return;
         }
 
         try {
             var response = new DefaultHttpResponse( HTTP_1_1, OK );
             HttpUtil.setContentLength( response, Files.size( path ) );
-
+            setContentTypeHeader( response, path );
             channelHandlerContext.write( response );
 
             channelHandlerContext.fireChannelActive();
@@ -64,5 +86,10 @@ public class ResponseHeaderProducingHandler extends MessageToMessageDecoder<Full
         var response = new DefaultFullHttpResponse( HTTP_1_1, status, Unpooled.copiedBuffer( "Failure: " + status + "\r\n", CharsetUtil.UTF_8 ) );
         response.headers().set( HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8" );
         ctx.writeAndFlush( response ).addListener( ChannelFutureListener.CLOSE );
+    }
+
+    private void setContentTypeHeader(HttpResponse response, Path path)
+    {
+        response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
     }
 }

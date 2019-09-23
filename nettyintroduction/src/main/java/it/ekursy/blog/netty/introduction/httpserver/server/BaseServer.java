@@ -1,5 +1,6 @@
 package it.ekursy.blog.netty.introduction.httpserver.server;
 
+import java.net.UnknownHostException;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -20,11 +21,10 @@ abstract class BaseServer {
     private final EventLoopGroup bossGroup = new NioEventLoopGroup();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
 
-    private final String host;
     private final int port;
+    private final String host;
 
     /**
-     *
      * @param host
      * @param port
      */
@@ -57,7 +57,7 @@ abstract class BaseServer {
         return bootstrap;
     }
 
-    public final void connect() throws InterruptedException
+    public final void connect() throws InterruptedException, UnknownHostException
     {
         try {
             var bootstrap = getBootstrap();
