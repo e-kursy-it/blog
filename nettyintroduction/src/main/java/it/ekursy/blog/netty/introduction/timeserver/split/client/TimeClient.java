@@ -6,10 +6,9 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import it.ekursy.blog.netty.introduction.timeserver.split.client.handlers.TimeClientHandler;
+import it.ekursy.blog.netty.introduction.timeserver.split.client.handlers.CurrentTimeDecoder;
+import it.ekursy.blog.netty.introduction.timeserver.split.client.handlers.CurrentTimeHandler;
 
 public class TimeClient extends BaseClient {
 
@@ -28,16 +27,9 @@ public class TimeClient extends BaseClient {
     protected List<ChannelHandler> getHandlers()
     {
         var handlers = new ArrayList<ChannelHandler>();
-        handlers.add( new ChannelInboundHandlerAdapter() {
-            @Override
-            public void channelActive(ChannelHandlerContext ctx) throws Exception
-            {
-                logger.info( "Channel active!" );
-                super.channelActive( ctx );
-            }
-        } );
 
-        handlers.add( new TimeClientHandler() );
+        handlers.add( new CurrentTimeDecoder() );
+        handlers.add( new CurrentTimeHandler() );
 
         return handlers;
     }

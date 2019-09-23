@@ -8,27 +8,19 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import it.ekursy.blog.netty.introduction.timeserver.split.pojo.UnixTime;
 
-public class TimeServerHandler extends ChannelInboundHandlerAdapter {
+public class CurrentTimeHandler extends ChannelInboundHandlerAdapter {
 
     private final Logger logger = LogManager.getLogger();
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx)
+    public void channelActive(ChannelHandlerContext ctx) throws Exception
     {
+        super.channelActive( ctx );
+
         var currentUnixTime = new UnixTime();
-        var time = ctx.alloc().buffer( 4 );
 
-        time.writeInt( currentUnixTime.getTime() );
+        var writeFuture = ctx.writeAndFlush( currentUnixTime );
 
-        logger.info( "writing time" );
-        var writeFuture = ctx.writeAndFlush( time );
         writeFuture.addListener( ChannelFutureListener.CLOSE );
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-    {
-        cause.printStackTrace();
-        ctx.close();
     }
 }
