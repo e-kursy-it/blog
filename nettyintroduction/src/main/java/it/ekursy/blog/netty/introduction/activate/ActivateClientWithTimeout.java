@@ -2,8 +2,7 @@ package it.ekursy.blog.netty.introduction.activate;
 
 import java.net.UnknownHostException;
 import java.time.Duration;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,17 +51,11 @@ public class ActivateClientWithTimeout {
                         {
                             super.channelActive( channelHandlerContext );
                             logger.info( "client connected" );
-                            var timer = new Timer();
-
-                            timer.schedule( new TimerTask() {
-                                @Override
-                                public void run()
-                                {
-                                    logger.info( "Closing client" );
-                                    channelHandlerContext.channel().close();
-                                }
-                            }, timeout.toMillis() );
-
+                            var executor = channelHandlerContext.executor();
+                            executor.schedule( () -> {
+                                logger.info( "Closing client" );
+                                channelHandlerContext.channel().close();
+                            }, timeout.toMillis(), TimeUnit.MILLISECONDS );
                         }
                     } );
                 }
