@@ -1,4 +1,4 @@
-package it.ekursy.blog.netty.introduction.timeserver.server.handlers;
+package it.ekursy.blog.netty.introduction.timeserver.single.server.handlers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

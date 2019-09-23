@@ -1,4 +1,4 @@
-package it.ekursy.blog.netty.introduction.timeserver.client.handlers;
+package it.ekursy.blog.netty.introduction.timeserver.single.client.handlers;
 
 import java.util.Date;
 

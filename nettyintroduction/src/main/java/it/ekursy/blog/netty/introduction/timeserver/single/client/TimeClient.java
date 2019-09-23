@@ -1,4 +1,4 @@
-package it.ekursy.blog.netty.introduction.timeserver.client;
+package it.ekursy.blog.netty.introduction.timeserver.single.client;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import it.ekursy.blog.netty.introduction.timeserver.client.handlers.TimeClientHandler;
+import it.ekursy.blog.netty.introduction.timeserver.single.client.handlers.TimeClientHandler;
 
 public class TimeClient extends BaseClient {
 

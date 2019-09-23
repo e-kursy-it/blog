@@ -1,4 +1,4 @@
-package it.ekursy.blog.netty.introduction.timeserver.server;
+package it.ekursy.blog.netty.introduction.timeserver.split.server;
 
 import java.util.List;
 

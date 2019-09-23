@@ -1,4 +1,4 @@
-package it.ekursy.blog.netty.introduction.timeserver.client;
+package it.ekursy.blog.netty.introduction.timeserver.split.client;
 
 import java.net.UnknownHostException;
 import java.util.List;
