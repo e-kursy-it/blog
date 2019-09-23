@@ -33,9 +33,9 @@ public class TimeServer extends BaseServer {
     public static void main(String[] args) throws Exception
     {
         try {
-            var activateServer = new TimeServer( "127.0.0.1", 8080 );
+            var timeServer = new TimeServer( "127.0.0.1", 8080 );
 
-            activateServer.connect();
+            timeServer.connect();
         }
         catch ( Exception e ) {
             e.printStackTrace();

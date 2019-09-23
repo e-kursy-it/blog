@@ -37,9 +37,9 @@ public class TimeClient extends BaseClient {
     public static void main(String[] args) throws Exception
     {
         try {
-            var activateClient = new TimeClient( "127.0.0.1", 8080 );
+            var timeClient = new TimeClient( "127.0.0.1", 8080 );
 
-            activateClient.connect();
+            timeClient.connect();
         }
         catch ( Exception e ) {
             e.printStackTrace();
