@@ -40,7 +40,7 @@ public class ResponseHeaderProducingHandler extends MessageToMessageDecoder<Full
 
         var path = Paths.get( fullHttpRequest.uri() );
 
-        if ( Files.exists( path ) ) {
+        if ( !Files.exists( path ) ) {
             sendError( channelHandlerContext, HttpResponseStatus.NOT_FOUND );
             return;
         }
