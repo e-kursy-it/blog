@@ -31,6 +31,7 @@ public class HealthCheckHandler extends SimpleChannelInboundHandler<FullHttpRequ
         if ( "/".equals( path ) || "".equals( path ) ) {
             var response = new DefaultHttpResponse( HTTP_1_1, OK );
             HttpUtil.setContentLength( response, 0 );
+            response.headers().set( "accept-ranges", "byte" );
 
             response.headers().set( HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8" );
             channelHandlerContext.writeAndFlush( response ).addListener( ChannelFutureListener.CLOSE );

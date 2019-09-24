@@ -12,6 +12,7 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 
 import it.ekursy.blog.netty.introduction.httpserver.server.handlers.ChunkedFileReadingHandler;
 import it.ekursy.blog.netty.introduction.httpserver.server.handlers.HealthCheckHandler;
+import it.ekursy.blog.netty.introduction.httpserver.server.handlers.RangeResponseProducingHandler;
 import it.ekursy.blog.netty.introduction.httpserver.server.handlers.ResponseHeaderProducingHandler;
 
 public class HttpServer extends BaseServer {
@@ -38,6 +39,7 @@ public class HttpServer extends BaseServer {
         handlers.add( new ChunkedWriteHandler() );
         handlers.add( new HealthCheckHandler() );
         handlers.add( new ResponseHeaderProducingHandler( filesLocation ) );
+        handlers.add( new RangeResponseProducingHandler() );
         handlers.add( new ChunkedFileReadingHandler() );
 
         return handlers;
@@ -46,7 +48,7 @@ public class HttpServer extends BaseServer {
     public static void main(String[] args) throws Exception
     {
         try {
-            var host = args[0];
+            var host = args[ 0 ];
             var filesLocation = Paths.get( args[ 1 ] );
             System.out.println( filesLocation );
             var httpServer = new HttpServer( host, 8180, filesLocation );

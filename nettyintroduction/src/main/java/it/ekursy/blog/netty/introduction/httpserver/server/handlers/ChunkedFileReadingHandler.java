@@ -30,20 +30,23 @@ public class ChunkedFileReadingHandler extends ChannelInboundHandlerAdapter {
 
     private void startFileProcessing(ChannelHandlerContext ctx, FileAvailableEvent evt)
     {
+        logger.info( "Start processing file" );
         RandomAccessFile raf;
         ChunkedFile chunkedFile;
         try {
             raf = new RandomAccessFile( evt.getPath().toFile(), "r" );
             chunkedFile = new ChunkedFile( raf, 0, raf.length(), 8192 );
+            var httpChunks = new HttpChunkedInput( chunkedFile );
+            var sendFileFuture = ctx.writeAndFlush( httpChunks, ctx.newProgressivePromise() );
+
+            showProgress( sendFileFuture );
         }
         catch ( IOException ignore ) {
+            logger.error( "error", ignore );
             ctx.channel().close();
             return;
         }
 
-        var sendFileFuture = ctx.writeAndFlush( new HttpChunkedInput( chunkedFile ), ctx.newProgressivePromise() );
-
-        showProgress( sendFileFuture );
     }
 
     private void showProgress(ChannelFuture sendFileFuture)

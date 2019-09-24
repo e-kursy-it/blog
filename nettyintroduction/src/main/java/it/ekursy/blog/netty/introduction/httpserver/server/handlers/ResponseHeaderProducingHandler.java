@@ -6,14 +6,14 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -25,8 +25,9 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.CharsetUtil;
 
 import it.ekursy.blog.netty.introduction.httpserver.server.event.FileAvailableEvent;
+import it.ekursy.blog.netty.introduction.httpserver.server.event.FileRangeRequestEvent;
 
-public class ResponseHeaderProducingHandler extends MessageToMessageDecoder<FullHttpRequest> {
+public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private final Logger logger = LogManager.getLogger();
 
@@ -47,38 +48,78 @@ public class ResponseHeaderProducingHandler extends MessageToMessageDecoder<Full
     }
 
     @Override
-    protected void decode(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullHttpRequest, List<Object> list) throws Exception
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullHttpRequest) throws Exception
     {
-        if ( !HttpMethod.GET.equals( fullHttpRequest.method() ) ) {
-            sendError( channelHandlerContext, HttpResponseStatus.METHOD_NOT_ALLOWED );
-            return;
-        }
-
-        var path = Paths.get( filesLocation.toString(), fullHttpRequest.uri() );
-
-        logger.info( "Start download: {}", path );
-        if ( !Files.exists( path ) || Files.isDirectory( path ) ) {
-            sendError( channelHandlerContext, HttpResponseStatus.NOT_FOUND );
-            return;
-        }
-
-        if ( !path.endsWith( ".mp4" ) ) {
-            sendError( channelHandlerContext, HttpResponseStatus.BAD_REQUEST );
-            return;
-        }
-
         try {
-            var response = new DefaultHttpResponse( HTTP_1_1, OK );
-            HttpUtil.setContentLength( response, Files.size( path ) );
-            setContentTypeHeader( response, path );
-            channelHandlerContext.write( response );
+            if ( !HttpMethod.GET.equals( fullHttpRequest.method() ) ) {
+                logger.warn( "Got invalid request: {}", fullHttpRequest.method() );
+                sendError( channelHandlerContext, HttpResponseStatus.METHOD_NOT_ALLOWED );
+                return;
+            }
 
-            channelHandlerContext.fireChannelActive();
-            channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
+            var range = fullHttpRequest.headers().get( "range" );
+            var path = Paths.get( filesLocation.toString(), fullHttpRequest.uri() );
+
+            if ( range == null ) {
+
+                logger.info( "Start download: {}", path );
+                if ( !Files.exists( path ) || Files.isDirectory( path ) ) {
+                    sendError( channelHandlerContext, HttpResponseStatus.NOT_FOUND );
+                    return;
+                }
+
+                if ( !path.toString().endsWith( ".mp4" ) ) {
+                    logger.warn( "Path does not end with .mp4: '{}'", path );
+                    sendError( channelHandlerContext, HttpResponseStatus.BAD_REQUEST );
+                    return;
+                }
+
+                try {
+                    var response = new DefaultHttpResponse( HTTP_1_1, OK );
+                    HttpUtil.setContentLength( response, Files.size( path ) );
+                    setContentTypeHeader( response, path );
+                    channelHandlerContext.write( response );
+
+                    channelHandlerContext.fireChannelActive();
+                    channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
+                }
+                finally {
+                    //                    channelHandlerContext.channel().pipeline().remove( this );
+                }
+            }
+            else {
+                logger.info( "found ranges: {}", range );
+
+                fullHttpRequest.retain();
+                channelHandlerContext.fireChannelActive();
+
+                int[] ranges = Arrays.stream( range.replace( "bytes=", "" ).split( "-" ) ).mapToInt( Integer::valueOf ).toArray();
+
+                if ( ranges.length < 2 ) {
+                    var response = new DefaultHttpResponse( HTTP_1_1, OK );
+                    HttpUtil.setContentLength( response, Files.size( path ) );
+                    setContentTypeHeader( response, path );
+                    channelHandlerContext.write( response );
+
+                    channelHandlerContext.fireChannelActive();
+                    channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
+
+                }
+                else {
+                    channelHandlerContext.fireChannelRead( new FileRangeRequestEvent( path, ranges ) );
+                }
+            }
         }
-        finally {
-            channelHandlerContext.channel().pipeline().remove( this );
+        catch ( Exception e ) {
+            logger.error( "erro", e );
         }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
+    {
+        super.exceptionCaught( ctx, cause );
+        logger.error( cause );
     }
 
     private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)
@@ -92,4 +133,5 @@ public class ResponseHeaderProducingHandler extends MessageToMessageDecoder<Full
     {
         response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
     }
+
 }
