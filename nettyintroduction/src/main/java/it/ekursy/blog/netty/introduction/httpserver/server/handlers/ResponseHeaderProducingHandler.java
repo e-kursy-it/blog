@@ -74,18 +74,13 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
                     return;
                 }
 
-                try {
-                    var response = new DefaultHttpResponse( HTTP_1_1, OK );
-                    HttpUtil.setContentLength( response, Files.size( path ) );
-                    setContentTypeHeader( response, path );
-                    channelHandlerContext.write( response );
+                var response = new DefaultHttpResponse( HTTP_1_1, OK );
+                HttpUtil.setContentLength( response, Files.size( path ) );
+                setContentTypeHeader( response, path );
+                channelHandlerContext.write( response );
 
-                    channelHandlerContext.fireChannelActive();
-                    channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
-                }
-                finally {
-                    //                    channelHandlerContext.channel().pipeline().remove( this );
-                }
+                channelHandlerContext.fireChannelActive();
+                channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
             }
             else {
                 logger.info( "found ranges: {}", range );

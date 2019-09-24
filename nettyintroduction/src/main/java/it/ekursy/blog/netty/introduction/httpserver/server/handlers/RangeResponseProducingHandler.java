@@ -30,13 +30,18 @@ public class RangeResponseProducingHandler extends MessageToMessageDecoder<FileR
             var range = fileRangeRequestEvent.getRange();
             var length = ( range[ 1 ] - range[ 0 ] ) + 1;
             var path = fileRangeRequestEvent.getPath();
+            var fileSize = Files.size( path );
+            var bytes = String.format( "bytes %d-%d/%d", range[ 0 ], range[ 1 ], fileSize );
+
+            logger.info( "producing byte: {}", bytes );
 
             HttpResponse response;
             if ( length > 0 ) {
 
                 var raf = new RandomAccessFile( path.toFile(), "r" );
+                raf.seek( range[ 0 ] );
                 var output = new byte[ length ];
-                raf.read( output, range[ 0 ], length );
+                raf.read( output, 0, length );
 
                 raf.close();
 
@@ -47,10 +52,6 @@ public class RangeResponseProducingHandler extends MessageToMessageDecoder<FileR
             else {
                 response = new DefaultFullHttpResponse( HTTP_1_1, PARTIAL_CONTENT );
             }
-            var fileSize = Files.size( path );
-            var bytes = String.format( "bytes %d-%d/%d", range[ 0 ], range[ 1 ], fileSize );
-
-            logger.info( "producing byte: {}", bytes );
 
             HttpUtil.setContentLength( response, length );
             response.headers().set( "content-type", "video/mp4" );
