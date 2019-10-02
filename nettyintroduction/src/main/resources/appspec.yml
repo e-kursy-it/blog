@@ -1,10 +1,10 @@
 version: 0.0
 os: linux
 files:
-  - source: "*.jar"
+  - source: jar/netty-introduction.jar
     destination: /opt/nettyapp/
-  - source: "lib/*.jar"
-    destination: /opt/nettyapp/lib/
+  - source: jar/libs/*.jar
+    destination: /opt/nettyapp/libs/
   - source: run.sh
     destination: /opt/nettyapp/
 hooks:

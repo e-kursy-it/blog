@@ -50,6 +50,7 @@
     </dependencies>
 
     <build>
+        <finalName>netty-introduction</finalName>
 
         <resources>
             <resource>
