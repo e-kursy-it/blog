@@ -1,3 +1,3 @@
 #!/bin/bash
 
-java -jar ${project.build.finalName}.jar $*
+java -jar /opt/nettyapp/${project.build.finalName}.jar $*
