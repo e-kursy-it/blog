@@ -92,33 +92,6 @@
                 </configuration>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
-                <executions>
-                    <execution>
-                        <id>package</id>
-                        <phase>package</phase>
-                        <configuration>
-                            <target>
-                                <!-- Do lots of other stuff with Ant. -->
-
-                                <!-- Create a zip file. -->
-                                <zip destfile="target/${build.finalName}.zip">
-                                    <fileset dir="./target" includes="*.jar" />
-                                    <fileset dir="./target/classes" includes="run.sh" />
-                                    <zipfileset dir="target/libs/" includes="*.jar" prefix="libs/" />
-                                </zip>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
 
