@@ -1,1 +1,1 @@
-java -jar ${project.build.finalName} $*
+java -jar ${project.build.finalName}.jar $*
