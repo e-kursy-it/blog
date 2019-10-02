@@ -9,7 +9,7 @@ files:
     destination: /opt/nettyapp/
 hooks:
   BeforeInstall:
-    - location: deployment_scripts/unzip_resource_bundle.zip
+    - location: deployment_scripts/unzip_resource_bundle.sh
   ApplicationStop:
     - location: deployment_scripts/stop.sh
   AfterInstall:
