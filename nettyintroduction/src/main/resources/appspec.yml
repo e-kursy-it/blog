@@ -3,7 +3,7 @@ os: linux
 files:
   - source: jar/netty-introduction.jar
     destination: /opt/nettyapp/
-  - source: jar/libs/*.jar
+  - source: jar/libs/
     destination: /opt/nettyapp/libs/
   - source: run.sh
     destination: /opt/nettyapp/
