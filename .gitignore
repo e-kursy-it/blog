@@ -1,0 +1,7 @@
+nettyintroduction/nettyintroduction.iml
+nettyintroduction/nettyintroduction.ipr
+nettyintroduction/nettyintroduction.iws
+
+target/**
+*/target/**
+netty-demo.zip
