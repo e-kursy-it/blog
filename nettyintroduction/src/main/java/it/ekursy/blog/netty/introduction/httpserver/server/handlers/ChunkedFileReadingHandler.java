@@ -23,6 +23,7 @@ import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.stream.ChunkedFile;
 
 import it.ekursy.blog.netty.introduction.httpserver.server.event.FileAvailableEvent;
+import it.ekursy.blog.netty.introduction.httpserver.server.event.FileRangeRequestEvent;
 
 public class ChunkedFileReadingHandler extends ChannelInboundHandlerAdapter {
 
@@ -34,6 +35,8 @@ public class ChunkedFileReadingHandler extends ChannelInboundHandlerAdapter {
         super.userEventTriggered( ctx, evt );
         if ( evt instanceof FileAvailableEvent ) {
             startFileProcessing( ctx, (FileAvailableEvent) evt );
+        } else if (evt instanceof FileRangeRequestEvent ) {
+            ctx.pipeline().remove( this );
         }
     }
 

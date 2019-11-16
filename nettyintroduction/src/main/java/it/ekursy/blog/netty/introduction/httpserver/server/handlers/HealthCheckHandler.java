@@ -1,10 +1,10 @@
 /**
  * Copyright 2019 Marek Będkowski
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses/.
  */
 package it.ekursy.blog.netty.introduction.httpserver.server.handlers;
@@ -35,17 +35,22 @@ public class HealthCheckHandler extends SimpleChannelInboundHandler<FullHttpRequ
             return;
         }
 
+        var keepAlive = HttpUtil.isKeepAlive( fullHttpRequest );
         var path = fullHttpRequest.uri();
 
         if ( "/".equals( path ) || "".equals( path ) ) {
             var response = new DefaultHttpResponse( HTTP_1_1, OK );
             HttpUtil.setContentLength( response, 0 );
-            response.headers().set( "accept-ranges", "byte" );
+            response.headers().set( HttpHeaderNames.ACCEPT_RANGES, "byte" );
 
             response.headers().set( HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8" );
-            channelHandlerContext.writeAndFlush( response ).addListener( ChannelFutureListener.CLOSE );
-        } else {
-            channelHandlerContext.fireChannelRead( fullHttpRequest );
+            var writeFuture = channelHandlerContext.writeAndFlush( response );
+            if ( !keepAlive ) {
+                writeFuture.addListener( ChannelFutureListener.CLOSE );
+            }
+        }
+        else {
+            channelHandlerContext.fireChannelRead( fullHttpRequest.retain() );
         }
     }
 

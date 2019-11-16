@@ -1,10 +1,10 @@
 /**
  * Copyright 2019 Marek Będkowski
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses/.
  */
 package it.ekursy.blog.netty.introduction.httpserver.server.handlers;
@@ -35,6 +35,7 @@ import io.netty.util.CharsetUtil;
 
 import it.ekursy.blog.netty.introduction.httpserver.server.event.FileAvailableEvent;
 import it.ekursy.blog.netty.introduction.httpserver.server.event.FileRangeRequestEvent;
+import it.ekursy.blog.netty.introduction.httpserver.server.event.FileRangeRequestEvent.Range;
 
 public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -60,28 +61,28 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullHttpRequest) throws Exception
     {
         try {
+
             if ( !HttpMethod.GET.equals( fullHttpRequest.method() ) ) {
                 logger.warn( "Got invalid request: {}", fullHttpRequest.method() );
                 sendError( channelHandlerContext, HttpResponseStatus.METHOD_NOT_ALLOWED );
                 return;
             }
-
-            var range = fullHttpRequest.headers().get( "range" );
             var path = Paths.get( filesLocation.toString(), fullHttpRequest.uri() );
+            if ( !Files.exists( path ) || Files.isDirectory( path ) ) {
+                sendError( channelHandlerContext, HttpResponseStatus.NOT_FOUND );
+                return;
+            }
 
-            if ( range == null ) {
+            if ( !path.toString().endsWith( ".mp4" ) ) {
+                logger.warn( "Path does not end with .mp4: '{}'", path );
+                sendError( channelHandlerContext, HttpResponseStatus.BAD_REQUEST );
+                return;
+            }
 
-                logger.info( "Start download: {}", path );
-                if ( !Files.exists( path ) || Files.isDirectory( path ) ) {
-                    sendError( channelHandlerContext, HttpResponseStatus.NOT_FOUND );
-                    return;
-                }
+            logger.info( "Start download: {}", path );
+            var rangeHeaderValue = fullHttpRequest.headers().get( HttpHeaderNames.RANGE );
 
-                if ( !path.toString().endsWith( ".mp4" ) ) {
-                    logger.warn( "Path does not end with .mp4: '{}'", path );
-                    sendError( channelHandlerContext, HttpResponseStatus.BAD_REQUEST );
-                    return;
-                }
+            if ( rangeHeaderValue == null ) {
 
                 var response = new DefaultHttpResponse( HTTP_1_1, OK );
                 HttpUtil.setContentLength( response, Files.size( path ) );
@@ -92,12 +93,11 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
                 channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
             }
             else {
-                logger.info( "found ranges: {}", range );
+                logger.info( "found ranges: {}", rangeHeaderValue );
 
-                fullHttpRequest.retain();
                 channelHandlerContext.fireChannelActive();
 
-                int[] ranges = Arrays.stream( range.replace( "bytes=", "" ).split( "-" ) ).mapToInt( Integer::valueOf ).toArray();
+                var ranges = Arrays.stream( rangeHeaderValue.replace( "bytes=", "" ).split( "-" ) ).mapToLong( Long::valueOf ).toArray();
 
                 if ( ranges.length < 2 ) {
                     var response = new DefaultHttpResponse( HTTP_1_1, OK );
@@ -107,15 +107,20 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
 
                     channelHandlerContext.fireChannelActive();
                     channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
-
                 }
                 else {
-                    channelHandlerContext.fireChannelRead( new FileRangeRequestEvent( path, ranges ) );
+                    var range = new Range( ranges[ 0 ], ranges[ 1 ] );
+                    if ( range.getSize() <= 0 ) {
+                        sendError( channelHandlerContext, HttpResponseStatus.BAD_REQUEST );
+                    }
+                    else {
+                        channelHandlerContext.fireChannelRead( new FileRangeRequestEvent( path, range ) );
+                    }
                 }
             }
         }
         catch ( Exception e ) {
-            logger.error( "erro", e );
+            logger.error( "error", e );
         }
     }
 
@@ -123,7 +128,7 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
     {
         super.exceptionCaught( ctx, cause );
-        logger.error( cause );
+        logger.error( "error", cause );
     }
 
     private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status)

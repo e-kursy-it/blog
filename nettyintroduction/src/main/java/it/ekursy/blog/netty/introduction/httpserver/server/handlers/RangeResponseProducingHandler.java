@@ -1,10 +1,10 @@
 /**
  * Copyright 2019 Marek Będkowski
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses/.
  */
 package it.ekursy.blog.netty.introduction.httpserver.server.handlers;
@@ -18,13 +18,14 @@ import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpUtil;
+import io.netty.handler.stream.ChunkedFile;
 
 import it.ekursy.blog.netty.introduction.httpserver.server.event.FileRangeRequestEvent;
 
@@ -37,44 +38,41 @@ public class RangeResponseProducingHandler extends MessageToMessageDecoder<FileR
     {
         try {
             var range = fileRangeRequestEvent.getRange();
-            var length = ( range[ 1 ] - range[ 0 ] ) + 1;
             var path = fileRangeRequestEvent.getPath();
             var fileSize = Files.size( path );
-            var bytes = String.format( "bytes %d-%d/%d", range[ 0 ], range[ 1 ], fileSize );
+            var contentRangeBytes = String.format( "bytes %d-%d/%d", range.getStart(), range.getEnd(), fileSize );
 
-            logger.info( "producing byte: {}", bytes );
+            logger.info( "producing byte: {}", contentRangeBytes );
 
-            HttpResponse response;
-            if ( length > 0 ) {
+            // some caching should be added on slower filesystems e.g. Amazon EFS
+            var raf = new RandomAccessFile( path.toFile(), "r" );
+            var chunkedFile = new ChunkedFile( raf, range.getStart(), raf.length(), range.getSize() );
 
-                var raf = new RandomAccessFile( path.toFile(), "r" );
-                raf.seek( range[ 0 ] );
-                var output = new byte[ length ];
-                raf.read( output, 0, length );
+            var buf = chunkedFile.readChunk( channelHandlerContext.alloc() );
 
-                raf.close();
+            chunkedFile.close();
 
-                logger.info( "producting content" );
-                var buf = Unpooled.wrappedBuffer( output );
-                response = new DefaultFullHttpResponse( HTTP_1_1, PARTIAL_CONTENT, buf );
-            }
-            else {
-                response = new DefaultFullHttpResponse( HTTP_1_1, PARTIAL_CONTENT );
-            }
+            logger.info( "producing content" );
+            var response = new DefaultFullHttpResponse( HTTP_1_1, PARTIAL_CONTENT, buf );
 
-            HttpUtil.setContentLength( response, length );
-            response.headers().set( "content-type", "video/mp4" );
-            response.headers().set( "Accept-Ranges", "bytes" );
-            response.headers().set( "content-range", bytes );
+            HttpUtil.setContentLength( response, range.getSize() );
+            response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
+            response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
+            response.headers().set( HttpHeaderNames.CONTENT_RANGE, contentRangeBytes );
 
-            logger.info( "producting response" );
-            channelHandlerContext.writeAndFlush( response ).addListener( ChannelFutureListener.CLOSE );
+            logger.info( "writing response" );
+            var writeFuture = channelHandlerContext.writeAndFlush( response );
+            writeFuture.addListener( ChannelFutureListener.CLOSE );
         }
         catch ( Exception e ) {
             logger.error( "error", e );
         }
-        finally {
-            channelHandlerContext.pipeline().remove( this );
-        }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
+    {
+        super.exceptionCaught( ctx, cause );
+        logger.error( "exception", cause );
     }
 }
