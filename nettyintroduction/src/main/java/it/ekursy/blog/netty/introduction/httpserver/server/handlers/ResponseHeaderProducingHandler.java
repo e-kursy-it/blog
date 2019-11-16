@@ -13,6 +13,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -68,7 +70,15 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
                 return;
             }
             var path = Paths.get( filesLocation.toString(), fullHttpRequest.uri() );
-            if ( !Files.exists( path ) || Files.isDirectory( path ) ) {
+
+            try {
+                // simple protection agains FS wide requests
+                var realPath = path.toRealPath( LinkOption.NOFOLLOW_LINKS );
+                if ( Files.isDirectory( path ) || !realPath.startsWith( filesLocation.toString() ) ) {
+                    throw new NoSuchFieldException();
+                }
+            }
+            catch ( NoSuchFileException e ) {
                 sendError( channelHandlerContext, HttpResponseStatus.NOT_FOUND );
                 return;
             }
