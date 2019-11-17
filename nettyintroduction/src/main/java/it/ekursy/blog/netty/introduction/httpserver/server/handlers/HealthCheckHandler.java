@@ -20,6 +20,7 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
@@ -41,9 +42,9 @@ public class HealthCheckHandler extends SimpleChannelInboundHandler<FullHttpRequ
         if ( "/".equals( path ) || "".equals( path ) ) {
             var response = new DefaultHttpResponse( HTTP_1_1, OK );
             HttpUtil.setContentLength( response, 0 );
-            response.headers().set( HttpHeaderNames.ACCEPT_RANGES, "byte" );
-
+            response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
             response.headers().set( HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8" );
+
             var writeFuture = channelHandlerContext.writeAndFlush( response );
             if ( !keepAlive ) {
                 writeFuture.addListener( ChannelFutureListener.CLOSE );
