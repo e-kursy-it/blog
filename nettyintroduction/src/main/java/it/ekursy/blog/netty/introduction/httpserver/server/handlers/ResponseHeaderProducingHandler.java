@@ -31,7 +31,6 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.CharsetUtil;
@@ -75,8 +74,8 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
             try {
                 // simple protection agains FS wide requests
                 var realPath = path.toRealPath( LinkOption.NOFOLLOW_LINKS );
-                if ( Files.isDirectory( path ) || !realPath.startsWith( filesLocation.toString() ) ) {
-                    throw new NoSuchFieldException();
+                if ( Files.isDirectory( path ) || !realPath.startsWith( filesLocation.toAbsolutePath().toString() ) ) {
+                    throw new NoSuchFileException( path.toString() );
                 }
             }
             catch ( NoSuchFileException e ) {
