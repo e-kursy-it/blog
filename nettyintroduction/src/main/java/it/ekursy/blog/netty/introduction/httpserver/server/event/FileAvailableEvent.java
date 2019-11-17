@@ -15,13 +15,21 @@ public class FileAvailableEvent {
 
     private final Path path;
 
-    public FileAvailableEvent(Path path)
+    private final boolean keepAlive;
+
+    public FileAvailableEvent(Path path, boolean keepAlive)
     {
         this.path = path;
+        this.keepAlive = keepAlive;
     }
 
     public Path getPath()
     {
         return path;
+    }
+
+    public boolean isKeepAlive()
+    {
+        return keepAlive;
     }
 }

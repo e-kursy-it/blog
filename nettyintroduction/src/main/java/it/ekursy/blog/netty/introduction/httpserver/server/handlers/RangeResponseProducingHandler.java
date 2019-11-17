@@ -40,29 +40,33 @@ public class RangeResponseProducingHandler extends MessageToMessageDecoder<FileR
             var range = fileRangeRequestEvent.getRange();
             var path = fileRangeRequestEvent.getPath();
             var fileSize = Files.size( path );
+            var lastChunk = fileSize == range.getSize();
             var contentRangeBytes = String.format( "bytes %d-%d/%d", range.getStart(), range.getEnd(), fileSize );
 
             logger.info( "producing byte: {}", contentRangeBytes );
 
             // some caching should be added on slower filesystems e.g. Amazon EFS
             var raf = new RandomAccessFile( path.toFile(), "r" );
-            var chunkedFile = new ChunkedFile( raf, range.getStart(), raf.length(), range.getSize() );
+            var chunkedFile = new ChunkedFile( raf, range.getStart(), fileSize, range.getSize() );
 
             var buf = chunkedFile.readChunk( channelHandlerContext.alloc() );
 
             chunkedFile.close();
 
-            logger.info( "producing content" );
+            logger.info( "producing content: {}", channelHandlerContext.channel() );
             var response = new DefaultFullHttpResponse( HTTP_1_1, PARTIAL_CONTENT, buf );
 
             HttpUtil.setContentLength( response, range.getSize() );
+            HttpUtil.setKeepAlive( response, true );
             response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
             response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
             response.headers().set( HttpHeaderNames.CONTENT_RANGE, contentRangeBytes );
 
-            logger.info( "writing response" );
+            logger.info( "writing response, last: {}", lastChunk );
             var writeFuture = channelHandlerContext.writeAndFlush( response );
-            writeFuture.addListener( ChannelFutureListener.CLOSE );
+            if ( !fileRangeRequestEvent.isKeepAlive() || lastChunk ) {
+                writeFuture.addListener( ChannelFutureListener.CLOSE );
+            }
         }
         catch ( Exception e ) {
             logger.error( "error", e );

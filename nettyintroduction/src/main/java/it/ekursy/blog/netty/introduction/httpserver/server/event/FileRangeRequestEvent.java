@@ -17,14 +17,18 @@ public class FileRangeRequestEvent {
 
     private final Range range;
 
+    private final boolean keepAlive;
+
     /**
      * @param path
      * @param range
+     * @param keepAlive
      */
-    public FileRangeRequestEvent(Path path, Range range)
+    public FileRangeRequestEvent(Path path, Range range, boolean keepAlive)
     {
         this.path = path;
         this.range = range;
+        this.keepAlive = keepAlive;
     }
 
     public Path getPath()
@@ -35,6 +39,11 @@ public class FileRangeRequestEvent {
     public Range getRange()
     {
         return range;
+    }
+
+    public boolean isKeepAlive()
+    {
+        return keepAlive;
     }
 
     public static class Range {
@@ -65,5 +74,7 @@ public class FileRangeRequestEvent {
         {
             return (int) ( end - start ) + 1;
         }
+
+
     }
 }

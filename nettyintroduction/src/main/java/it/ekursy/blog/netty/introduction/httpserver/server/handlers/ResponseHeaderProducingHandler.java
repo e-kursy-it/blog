@@ -29,6 +29,7 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -91,16 +92,19 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
 
             logger.info( "Start download: {}", path );
             var rangeHeaderValue = fullHttpRequest.headers().get( HttpHeaderNames.RANGE );
+            var keepAlive = HttpUtil.isKeepAlive( fullHttpRequest );
 
             if ( rangeHeaderValue == null ) {
 
                 var response = new DefaultHttpResponse( HTTP_1_1, OK );
                 HttpUtil.setContentLength( response, Files.size( path ) );
-                setContentTypeHeader( response, path );
+                HttpUtil.setKeepAlive( response, true );
+                response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
+                response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
                 channelHandlerContext.write( response );
 
                 channelHandlerContext.fireChannelActive();
-                channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
+                channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path, keepAlive ) );
             }
             else {
                 logger.info( "found ranges: {}", rangeHeaderValue );
@@ -112,11 +116,12 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
                 if ( ranges.length < 2 ) {
                     var response = new DefaultHttpResponse( HTTP_1_1, OK );
                     HttpUtil.setContentLength( response, Files.size( path ) );
-                    setContentTypeHeader( response, path );
+                    response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
+                    response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
                     channelHandlerContext.write( response );
 
                     channelHandlerContext.fireChannelActive();
-                    channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path ) );
+                    channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path, keepAlive ) );
                 }
                 else {
                     var range = new Range( ranges[ 0 ], ranges[ 1 ] );
@@ -124,7 +129,7 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
                         sendError( channelHandlerContext, HttpResponseStatus.BAD_REQUEST );
                     }
                     else {
-                        channelHandlerContext.fireChannelRead( new FileRangeRequestEvent( path, range ) );
+                        channelHandlerContext.fireChannelRead( new FileRangeRequestEvent( path, range, keepAlive ) );
                     }
                 }
             }
@@ -146,11 +151,6 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
         var response = new DefaultFullHttpResponse( HTTP_1_1, status, Unpooled.copiedBuffer( "Failure: " + status + "\r\n", CharsetUtil.UTF_8 ) );
         response.headers().set( HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8" );
         ctx.writeAndFlush( response ).addListener( ChannelFutureListener.CLOSE );
-    }
-
-    private void setContentTypeHeader(HttpResponse response, Path path)
-    {
-        response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
     }
 
 }

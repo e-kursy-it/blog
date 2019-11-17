@@ -15,6 +15,7 @@ import java.io.RandomAccessFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelProgressiveFuture;
@@ -35,23 +36,34 @@ public class ChunkedFileReadingHandler extends ChannelInboundHandlerAdapter {
         super.userEventTriggered( ctx, evt );
         if ( evt instanceof FileAvailableEvent ) {
             startFileProcessing( ctx, (FileAvailableEvent) evt );
-        } else if (evt instanceof FileRangeRequestEvent ) {
+        }
+        else if ( evt instanceof FileRangeRequestEvent ) {
             ctx.pipeline().remove( this );
         }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception
+    {
+        logger.info( "Channel closed" );
     }
 
     private void startFileProcessing(ChannelHandlerContext ctx, FileAvailableEvent evt)
     {
         logger.info( "Start processing file" );
-        RandomAccessFile raf;
-        ChunkedFile chunkedFile;
         try {
-            raf = new RandomAccessFile( evt.getPath().toFile(), "r" );
-            chunkedFile = new ChunkedFile( raf, 0, raf.length(), 8192 );
-            var httpChunks = new HttpChunkedInput( chunkedFile );
-            var sendFileFuture = ctx.writeAndFlush( httpChunks, ctx.newProgressivePromise() );
+            // DefaultFileRegion misbehaves when using byte-range requests
+            var raf = new RandomAccessFile( evt.getPath().toFile(), "r" );
+            var fileLength = raf.length();
+            var chunkedFile = new ChunkedFile( raf, 0, fileLength, 8192 );
+            var httpChunkedInput = new HttpChunkedInput( chunkedFile );
+            var sendFileFuture = ctx.writeAndFlush( httpChunkedInput, ctx.newProgressivePromise() );
 
             showProgress( sendFileFuture );
+
+            if ( !evt.isKeepAlive() ) {
+                sendFileFuture.addListener( ChannelFutureListener.CLOSE );
+            }
         }
         catch ( IOException ignore ) {
             logger.error( "error", ignore );
