@@ -105,7 +105,7 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
 
                 logger.info("Sent response 1.1 OK");
 
-                writePromise.addListener(ChannelFutureListener.CLOSE);
+//                writePromise.addListener(ChannelFutureListener.CLOSE);
 
 //                channelHandlerContext.fireChannelActive();
 //                writePromise.addListener((future) -> {
