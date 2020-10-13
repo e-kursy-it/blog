@@ -96,16 +96,14 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
             if ( rangeHeaderValue == null ) {
 
                 var response = new DefaultHttpResponse( HTTP_1_1, OK );
-                HttpUtil.setContentLength( response, Files.size( path ) );
+//                HttpUtil.setContentLength( response, Files.size( path ) );
                 HttpUtil.setKeepAlive( response, true );
                 response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
                 response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
-                response.headers().set ( HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED );
+                response.headers().set( HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED );
                 var writePromise = channelHandlerContext.writeAndFlush( response );
 
                 logger.info("Sent response 1.1 OK");
-
-//                writePromise.addListener(ChannelFutureListener.CLOSE);
 
 //                channelHandlerContext.fireChannelActive();
 //                writePromise.addListener((future) -> {
@@ -122,9 +120,10 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
 
                 if ( ranges.length < 2 ) {
                     var response = new DefaultHttpResponse( HTTP_1_1, OK );
-                    HttpUtil.setContentLength( response, Files.size( path ) );
+//                    HttpUtil.setContentLength( response, Files.size( path ) );
                     response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
                     response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
+                    response.headers().set( HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED );
                     channelHandlerContext.writeAndFlush( response );
 
                     channelHandlerContext.fireChannelActive();
