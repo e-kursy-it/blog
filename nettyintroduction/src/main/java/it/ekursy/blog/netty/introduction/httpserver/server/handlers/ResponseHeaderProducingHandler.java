@@ -101,7 +101,7 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
                 response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
                 response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
                 response.headers().set ( HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED );
-                channelHandlerContext.write( response );
+                channelHandlerContext.writeAndFlush( response );
 
                 logger.info("Sent response 1.1 OK");
 
@@ -120,7 +120,7 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
                     HttpUtil.setContentLength( response, Files.size( path ) );
                     response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
                     response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
-                    channelHandlerContext.write( response );
+                    channelHandlerContext.writeAndFlush( response );
 
                     channelHandlerContext.fireChannelActive();
                     channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path, keepAlive ) );
