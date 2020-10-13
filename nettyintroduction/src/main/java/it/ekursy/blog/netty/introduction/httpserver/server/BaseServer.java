@@ -12,6 +12,8 @@ package it.ekursy.blog.netty.introduction.httpserver.server;
 import java.net.UnknownHostException;
 import java.util.List;
 
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import io.netty.bootstrap.ServerBootstrap;
@@ -48,6 +50,7 @@ abstract class BaseServer {
         var bootstrap = new ServerBootstrap();
         bootstrap.group( bossGroup, workerGroup );
         bootstrap.channel( NioServerSocketChannel.class );
+        bootstrap.handler( new LoggingHandler( LogLevel.INFO ) );
         bootstrap.option( ChannelOption.SO_KEEPALIVE, true );
         bootstrap.childHandler( new ChannelInitializer<SocketChannel>() {
             @Override
