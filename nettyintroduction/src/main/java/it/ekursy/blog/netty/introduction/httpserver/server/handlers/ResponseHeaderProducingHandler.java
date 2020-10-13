@@ -101,12 +101,17 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
                 response.headers().set( HttpHeaderNames.CONTENT_TYPE, "video/mp4" );
                 response.headers().set( HttpHeaderNames.ACCEPT_RANGES, HttpHeaderValues.BYTES );
                 response.headers().set ( HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED );
-                channelHandlerContext.writeAndFlush( response );
+                var writePromise = channelHandlerContext.writeAndFlush( response );
 
                 logger.info("Sent response 1.1 OK");
 
+//                writePromise.addListener(ChannelFutureListener.CLOSE);
+
                 channelHandlerContext.fireChannelActive();
-                channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path, keepAlive ) );
+                writePromise.addListener((future) -> {
+                    logger.info("Write finished, sending file available event");
+                    channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path, keepAlive ) );
+                });
             }
             else {
                 logger.info( "found ranges: {}", rangeHeaderValue );
