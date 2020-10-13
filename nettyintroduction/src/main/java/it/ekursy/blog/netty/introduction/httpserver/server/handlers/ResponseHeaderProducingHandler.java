@@ -105,13 +105,13 @@ public class ResponseHeaderProducingHandler extends SimpleChannelInboundHandler<
 
                 logger.info("Sent response 1.1 OK");
 
-//                writePromise.addListener(ChannelFutureListener.CLOSE);
+                writePromise.addListener(ChannelFutureListener.CLOSE);
 
-                channelHandlerContext.fireChannelActive();
-                writePromise.addListener((future) -> {
-                    logger.info("Write finished, sending file available event");
-                    channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path, keepAlive ) );
-                });
+//                channelHandlerContext.fireChannelActive();
+//                writePromise.addListener((future) -> {
+//                    logger.info("Write finished, sending file available event");
+//                    channelHandlerContext.fireUserEventTriggered( new FileAvailableEvent( path, keepAlive ) );
+//                });
             }
             else {
                 logger.info( "found ranges: {}", rangeHeaderValue );
