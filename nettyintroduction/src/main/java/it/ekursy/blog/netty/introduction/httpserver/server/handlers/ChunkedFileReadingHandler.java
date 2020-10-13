@@ -53,6 +53,7 @@ public class ChunkedFileReadingHandler extends ChannelInboundHandlerAdapter {
         logger.info( "Start processing file" );
         try {
             // DefaultFileRegion misbehaves when using byte-range requests
+            logger.debug("Opening file: {}", evt.getPath() );
             var raf = new RandomAccessFile( evt.getPath().toFile(), "r" );
             var fileLength = raf.length();
             logger.debug( "file opened, size: {} ", fileLength);
