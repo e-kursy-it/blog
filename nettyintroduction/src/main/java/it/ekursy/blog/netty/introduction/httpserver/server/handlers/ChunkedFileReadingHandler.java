@@ -55,13 +55,18 @@ public class ChunkedFileReadingHandler extends ChannelInboundHandlerAdapter {
             // DefaultFileRegion misbehaves when using byte-range requests
             var raf = new RandomAccessFile( evt.getPath().toFile(), "r" );
             var fileLength = raf.length();
+            logger.debug( "file opened, size: {} ", fileLength);
             var chunkedFile = new ChunkedFile( raf, 0, fileLength, 8192 );
+            logger.debug( "chunked file created " );
             var httpChunkedInput = new HttpChunkedInput( chunkedFile );
+            logger.debug( "Chunked input created" );
             var sendFileFuture = ctx.writeAndFlush( httpChunkedInput, ctx.newProgressivePromise() );
+            logger.debug( "Write and flush called - producing response" );
 
             showProgress( sendFileFuture );
 
             if ( !evt.isKeepAlive() ) {
+                logger.debug( "keep-alive: false - adding close handler" );
                 sendFileFuture.addListener( ChannelFutureListener.CLOSE );
             }
         }
